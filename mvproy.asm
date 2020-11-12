@@ -382,3 +382,73 @@ jc S 	;SI SE ACTIVA EL CARRY NO CUMPLE EL NUMERO PORQUE ES MENOR QUE EL NUMERO M
 	FIN:
 endm
 
+pixel macro  x0, y0,color
+	push cx
+	push ax
+	push bx
+	push dx
+
+	mov ah, 0ch
+	mov al, color
+	mov bh, 00h
+	mov dx, y0 
+	mov cx, x0
+	int 10h
+	
+	pop dx
+	pop bx
+	pop ax
+	pop cx
+endm
+
+pintarpnegro macro posi,posf,posy
+LOCAL INICIAR,FIN
+push ax
+push bx
+push cx
+
+;pixel ax,cx,00h
+
+mov ax,posi
+mov bx,posf
+mov cx,posy
+
+
+
+INICIAR:
+	cmp ax,bx
+	je FIN
+
+	;modoLectura
+	;esperarTecla
+	;modovideo
+
+	pixel ax,cx,00h
+	inc ax
+	jmp INICIAR
+FIN:
+
+pop cx
+pop bx
+pop ax
+
+endm
+
+getpcolor macro col,fil
+	push bx
+	push cx
+	push dx
+
+	xor ax,ax
+	mov ah,0dh
+	mov bx,00h
+	mov cx,col
+	mov dx,fil
+	int 10h
+	;DEVUELVE EL COLOR EN EL REGISTRO AL
+
+	pop dx
+	pop cx
+	pop bx
+endm 
+

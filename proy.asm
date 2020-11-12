@@ -54,6 +54,7 @@ esadmintag 	db 10,13,"Accediste como admin $"
 pusuario db 10,13,"Usuario: $"
 pcontrasena db 10,13,"Contrasena: $"
 
+ejuego db "   N1   00:00:00   00$"
 
 ;yt	db 10,13,"Estas aqui $"
 
@@ -80,6 +81,11 @@ num db 10 dup('$')
 tabadmin db 1 dup('$')
 atab     db 64000	dup('$')
 
+pelota db 4 dup('$')
+;[x]
+;[y]
+;[mov x]
+;[mov y]
 .code
 
 	main proc
@@ -518,34 +524,31 @@ atab     db 64000	dup('$')
 	mostrarNumeros endp
 
 
-	aumentarCursor proc
-		push ax
-		push dx
 
-		mov ah,03h
-		xor bx,bx
-		int 10h  	;Busca POSICION DEL CURSOR
-
-		mov ah,02h
-		inc DL
-		int 10h
-
-		pop dx
-		pop ax
-
-		ret
-	aumentarCursor endp
 
 
 	pantallajuego proc
 		cleararray atab
 		call marcojuego
+		call initbarra
+
+		
+
+		mov pelota[0],08ch 		;coordenada x
+		mov pelota[1],0A0h		;coordenada y
+		mov pelota[2],01h 		;movimiento x
+		mov al,01h
+		neg al
+		mov pelota[3],al 		;movimiento y
+
 		modovideo
+		pixel 08ch,0A0h,0Fh ;LINEA 140 = 8C Y COLUMNA 160 = A0
 		pintarTablero atab
 		irLectura
 		call tijuego
+		call ingame		;INICIA EL JUEGO
 		irVideo
-		esperarTecla
+		;esperarTecla
 		modoLectura
 		ret
 	pantallajuego endp
@@ -601,9 +604,339 @@ atab     db 64000	dup('$')
 			ret
 	marcojuego endp
 
+	;=======TITULOS DEL JUEGO=======
 	tijuego proc 
-		printvideo ordenamiento
+		printvideo valusuario
+		printvideo ejuego
+		;call poscursorpuntaje
+		;printvideo pr
 		ret
 	tijuego endp
+
+	;======POSICION INICIAL BARRA JUEGO====
+	initbarra proc
+		;POSICIONES DE LA BARRA INICIALES
+		;(180*320)+140= 57740
+		mov atab[57740],'1'
+		mov atab[57741],'1'
+		mov atab[57742],'1'
+		mov atab[57743],'1'
+		mov atab[57744],'1'
+		mov atab[57745],'1'
+		mov atab[57746],'1'
+		mov atab[57747],'1'
+		mov atab[57748],'1'
+		mov atab[57749],'1'
+		mov atab[57750],'1'
+		mov atab[57751],'1'
+		mov atab[57752],'1'
+		mov atab[57753],'1'
+		mov atab[57754],'1'
+		mov atab[57755],'1'
+		mov atab[57756],'1'
+		mov atab[57757],'1'
+
+
+		;INICIAR PELOTA
+
+		;mov atab[54540],'1'
+
+
+	initbarra endp
+
+
+;=====================CURSOR=================
+
+	poscursorpuntaje proc
+		;POSICIONAR CURSOR EN 20
+		mov ah,02h
+		xor bx,bx
+		mov dh,00h
+		mov dl,14h
+		int 10h
+
+	poscursorpuntaje endp
+
+		aumentarCursor proc
+		push ax
+		push dx
+
+		mov ah,03h
+		xor bx,bx
+		int 10h  	;Busca POSICION DEL CURSOR
+
+		mov ah,02h
+		inc DL
+		int 10h
+
+		pop dx
+		pop ax
+
+		ret
+	aumentarCursor endp
+
+
+	ingame proc
+
+
+		JUEGO:
+			call leertecla
+			cmp dx,04h
+			je SALIR
+			jmp JUEGO
+		SALIR:
+		ret
+	ingame endp
+
+	leertecla proc
+		;TECLA A, MOVER IZQUIERDA - 97 en ascii - 61 en hexa
+		;TECLA D, MOVER DERECHA - 100 en ascii - 64 en hexa
+		;TECLA P, PAUSA - 112 en ascii - 70 en hexa
+
+		mov ah,01h
+		int 16h
+		jz FIN
+		xor ax,ax
+		int 16h
+		cmp al,70h
+		je PAUSA
+		cmp al,61h
+		je MOVIZQ
+		cmp al,64h
+		je MOVDER
+		cmp al,7Ah;z->122
+		je P 
+		jmp FIN
+
+		PAUSA:
+		mov dx,04h
+		jmp FIN
+
+		MOVDER:
+		call movimientoderecha
+		jmp FIN
+
+		MOVIZQ:
+		call movimientoizquierda
+		jmp FIN
+
+		P:
+		call movimientopelota
+		jmp FIN
+
+		FIN:
+
+		ret
+	leertecla endp
+
+	movimientoderecha proc
+		;BUSCAR PRIMERA POSICION DE COLOR BLANCO
+		;SE SABE QUE ESTA EN LA FILA 180  Y 11 DE COLUMNA PARA EVADIR EL MARGEN
+		;320*180+11=57611 = E10B
+		;HASTA LA POSICION 199-11 -> 57611 + 287 = 57898 
+
+		;COLUMNA 180 (B4), FILA 11
+		;COLUMNA 180, FILA 188
+		mov si,0Bh ;11 En decimal
+		xor di,di
+		INICIO:
+		cmp si,134h ;320 En decimal
+		je FIN
+		getpcolor si,0B4h ;si al es 0Fh quiere decir que es la posicion inicial de la barra
+		cmp al,0Fh
+		je PINTARNEGRO
+		inc si
+		jmp INICIO
+		PINTARNEGRO:
+		;pixel si,0B4h,00h
+		xor ax,ax
+		mov ax,12h 	;LA BARRA TIENE 18 PIXELES = 12h
+		add ax,si 	;pos final = 18+si
+		push si
+			pnegro:
+			cmp si,ax
+			je IB
+			pixel si,0B4h,00h
+			inc si
+			jmp pnegro
+		IB:
+			pop si
+			inc si
+			inc ax
+		PINTARBLANCO:
+			cmp si,ax
+			je FIN
+			pixel si,0B4h,0Fh
+			inc si
+			jmp PINTARBLANCO
+		FIN:
+		ret
+	movimientoderecha endp
+
+	movimientoizquierda proc
+		;BUSCAR PRIMERA POSICION DE COLOR BLANCO
+		;SE SABE QUE ESTA EN LA FILA 180  Y 11 DE COLUMNA PARA EVADIR EL MARGEN
+		;320*180+11=57611 = E10B
+		;HASTA LA POSICION 199-11 -> 57611 + 287 = 57898 
+		;COLUMNA 180 (B4), FILA 11
+		;COLUMNA 180, FILA 188
+		mov si,0Bh ;11 En decimal
+		xor di,di
+		INICIO:
+		cmp si,134h ;188 En decimal
+		je FIN
+		getpcolor si,0B4h ;si al es 0Fh quiere decir que es la posicion inicial de la barra
+		cmp al,0Fh
+		je PINTARNEGRO
+		inc si
+		jmp INICIO
+		PINTARNEGRO:
+		;pixel si,0B4h,00h
+		xor ax,ax
+		mov ax,12h 	;LA BARRA TIENE 18 PIXELES = 12h
+		add ax,si 	;pos final = 18+si
+		push si
+			pnegro:
+			cmp si,ax
+			je IB
+			pixel si,0B4h,00h
+			inc si
+			jmp pnegro
+		IB:
+			pop si
+			dec si
+			dec ax
+		PINTARBLANCO:
+			cmp si,ax
+			je FIN
+			pixel si,0B4h,0Fh
+			inc si
+			jmp PINTARBLANCO
+		FIN:
+		ret
+	movimientoizquierda endp
+
+	movimientopelota proc
+		;PINTAR PIXEL ACTUAL DE NEGRO
+		call cambiodireccion
+		irLectura
+		xor si,si
+		xor di,di
+		xor ax,ax
+		mov al,pelota[0]
+		mov si,ax
+		mov al,pelota[1]
+		mov di,ax
+		irVideo
+		pixel si,di,00h
+		;mover coordenadas de pelota
+		irLectura
+		xor si,si
+		xor di,di
+		xor ax,ax
+		mov al,pelota[0]
+		mov bl,pelota[2]
+		add al,bl
+		mov pelota[0],al
+
+		mov al,pelota[1]
+		mov bl,pelota[3]
+		add al,bl
+		mov pelota[1],al
+
+		xor ax,ax
+		xor bx,bx
+
+		mov al,pelota[0]
+		mov si,ax
+		mov al,pelota[1]
+		mov di,ax
+		irVideo
+		pixel si,di,0Fh
+		ret
+	movimientopelota endp
+
+	cambiodireccion proc
+		irLectura
+		;xor ax,ax
+		;mov al,pelota[0]
+		;mov si,ax ;X
+		;mov al,pelota[1]
+		;mov di,ax ;Y
+		xor si,si
+		xor di,di
+		xor ax,ax
+		mov al,pelota[0]
+		mov si,ax ;X
+		mov al,pelota[1]
+		mov di,ax ;Y
+		irVideo
+
+		
+		inc si
+		getpcolor si,di ;	VERIFICAR SI HAY OBSTACULO ARRIBA
+		cmp al,00h
+		jne OAR			;HAY OBSTACULO ARRIBA
+
+		dec si
+
+		dec si
+		getpcolor si,di ;VERIFICAR SI HAY OBSTACULO ABAJO
+		cmp al,00h
+		jne OAB			;HAY OBSTACULO ABAJO
+
+		inc si
+
+		dec di
+		getpcolor si,di;VERIFICAR SI HAY OBSTACULO IZQUIERDA
+		cmp al,00h
+		jne OI			;HAY OBSTACULO IZQUIERDA
+
+		inc di
+
+		inc di
+		getpcolor si,di;VERIFICAR SI HAY OBSTACULO DERECHA
+		cmp al,00h
+		jne OD			;HAY OBSTACULO DERECHA
+
+		jmp FIN
+
+		OAR:
+		mov al,01h
+		neg al
+		irLectura
+		mov pelota[2],al
+		irVideo
+		jmp FIN
+		
+		OAB:
+		mov al,01h
+		irLectura
+		mov pelota[2],al
+		irVideo
+		jmp FIN
+
+		OI:
+		mov al,01h
+		irLectura
+		mov pelota[3],al
+		irVideo
+		jmp FIN
+
+		OD:
+		mov al,01h
+		neg al
+		irLectura
+		mov pelota[3],al
+		irVideo
+		jmp FIN
+
+		FIN:
+
+		ret
+	cambiodireccion endp
+
+
+
 
 end
