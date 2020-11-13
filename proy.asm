@@ -54,7 +54,9 @@ esadmintag 	db 10,13,"Accediste como admin $"
 pusuario db 10,13,"Usuario: $"
 pcontrasena db 10,13,"Contrasena: $"
 
-ejuego db "   N1   00:00:00   00$"
+ejuego db "   N1   00:00:00 $"
+
+tascendente db "ORDENAMIENTO: BUBBLESORT TIEMPO: 00:00 VELOCIDAD: 5"
 
 ;yt	db 10,13,"Estas aqui $"
 
@@ -81,7 +83,7 @@ num db 10 dup('$')
 tabadmin db 1 dup('$')
 atab     db 64000	dup('$')
 
-pelota db 4 dup('$')
+pelota db 5 dup('$')
 ;[x]
 ;[y]
 ;[mov x]
@@ -144,16 +146,16 @@ pelota db 4 dup('$')
 		;mov atab[4],'1'
 		;mov atab[5],'1'
 		;showString atab[0],num
-		mov ordenamiento[0],'1'
-		mov ordenamiento[1],'8'
-		mov ordenamiento[2],','
-		mov ordenamiento[3],'9'
-		mov ordenamiento[4],','
-		mov ordenamiento[5],'4'
-		mov ordenamiento[6],'7'
-		mov ordenamiento[7],','
-		mov ordenamiento[8],'5'
-		mov ordenamiento[9],'2'
+		;mov ordenamiento[0],'1'
+		;mov ordenamiento[1],'8'
+		;mov ordenamiento[2],','
+		;mov ordenamiento[3],'9'
+		;mov ordenamiento[4],','
+		;mov ordenamiento[5],'4'
+		;mov ordenamiento[6],'7'
+		;mov ordenamiento[7],','
+		;mov ordenamiento[8],'5'
+		;mov ordenamiento[9],'2'
 
 		;COSAS ADMIN
 		;call ordenarBurbujaAscendente
@@ -169,6 +171,23 @@ pelota db 4 dup('$')
 		jmp MENU
 
 		ESADMIN:
+		;mov ordenamiento[0],'1'
+		;mov ordenamiento[1],'8'
+		;mov ordenamiento[2],','
+		;mov ordenamiento[3],'9'
+		;mov ordenamiento[4],','
+		;mov ordenamiento[5],'4'
+		;mov ordenamiento[6],'7'
+		;mov ordenamiento[7],','
+		;mov ordenamiento[8],'5'
+		;mov ordenamiento[9],'2'
+
+		print msmRutaL
+		saveData rutaArchivo
+		abrirF rutaArchivo,handleFichero
+		leerF SIZEOF ordenamiento,ordenamiento,handleFichero
+		cerrarF handleFichero
+
 		print barras
 		print adminop
 		getChar
@@ -189,18 +208,18 @@ pelota db 4 dup('$')
 		cmp al,'2'
 		je DODESECENDENTE
 		;====NUMEROS PRUEBA====
-		mov ordenamiento[0],'1'
-		mov ordenamiento[1],'8'
-		mov ordenamiento[2],','
-		mov ordenamiento[3],'9'
-		mov ordenamiento[4],','
-		mov ordenamiento[5],'4'
-		mov ordenamiento[6],'7'
-		mov ordenamiento[7],','
-		mov ordenamiento[8],'5'
-		mov ordenamiento[9],'2'
+		;mov ordenamiento[0],'1'
+		;mov ordenamiento[1],'8'
+		;mov ordenamiento[2],','
+		;mov ordenamiento[3],'9'
+		;mov ordenamiento[4],','
+		;mov ordenamiento[5],'4'
+		;mov ordenamiento[6],'7'
+		;mov ordenamiento[7],','
+		;mov ordenamiento[8],'5'
+		;mov ordenamiento[9],'2'
 
-		call ordenarBurbujaAscendente
+		;call ordenarBurbujaAscendente
 		jmp ESADMIN
 
 		TOPTPS:
@@ -208,14 +227,12 @@ pelota db 4 dup('$')
 		DOASCENDENTE:
 			print edel
 			getChar
-			jmp EMPEZARORDENAMIENTO
+			call ordenarBurbujaAscendente
+			jmp ESADMIN
 		DODESECENDENTE:
 			print edel
 			getChar
-			jmp EMPEZARORDENAMIENTO
-
-		EMPEZARORDENAMIENTO:
-			getChar
+			call ordenarBurbujaDescendente
 			jmp ESADMIN
 
 		ErrorAbrir:
@@ -490,10 +507,12 @@ pelota db 4 dup('$')
 		call iniciarTableroAdmin 		;PINTA LOS PIXELES DEL MARCO EN ARRAY atab
 		call armarBarra					;ARMA TODAS LAS BARRAS 
 		modovideo						;Cambiar A MODO VIDEO
+		;printvideo tascendente
 		pintarTablero atab				;PINTA LOS PIXELES QUE SE LLENARON ANTERIORMENTE EN EL ARREGLO
 		call mostrarNumeros
 		;printOrdenamiento ordenamiento[0]
 		esperarTecla
+		;delay 3E8h
 		modoLectura						;CAMBIAR A MODO LECTURA
 		cleararray atab
 		ret
@@ -520,7 +539,7 @@ pelota db 4 dup('$')
 			jmp INIT
 
 		FIN:
-
+		ret
 	mostrarNumeros endp
 
 
@@ -540,8 +559,11 @@ pelota db 4 dup('$')
 		mov al,01h
 		neg al
 		mov pelota[3],al 		;movimiento y
+		mov pelota[4],00h
 
 		modovideo
+		;crearbloque 14h,14h,0Fh
+		call crearbloques
 		pixel 08ch,0A0h,0Fh ;LINEA 140 = 8C Y COLUMNA 160 = A0
 		pintarTablero atab
 		irLectura
@@ -652,9 +674,9 @@ pelota db 4 dup('$')
 		mov ah,02h
 		xor bx,bx
 		mov dh,00h
-		mov dl,14h
+		mov dl,19h
 		int 10h
-
+		ret
 	poscursorpuntaje endp
 
 		aumentarCursor proc
@@ -680,6 +702,8 @@ pelota db 4 dup('$')
 
 
 		JUEGO:
+			;delay 0FAh
+			;call movimientopelota
 			call leertecla
 			cmp dx,04h
 			je SALIR
@@ -692,7 +716,11 @@ pelota db 4 dup('$')
 		;TECLA A, MOVER IZQUIERDA - 97 en ascii - 61 en hexa
 		;TECLA D, MOVER DERECHA - 100 en ascii - 64 en hexa
 		;TECLA P, PAUSA - 112 en ascii - 70 en hexa
-
+		irLectura
+		mov al,pelota[1]
+		irVideo
+		cmp al,0C1h
+		je PAUSA
 		mov ah,01h
 		int 16h
 		jz FIN
@@ -875,6 +903,8 @@ pelota db 4 dup('$')
 		
 		inc si
 		getpcolor si,di ;	VERIFICAR SI HAY OBSTACULO ARRIBA
+		cmp al, 0Eh
+		je COLISIONAR
 		cmp al,00h
 		jne OAR			;HAY OBSTACULO ARRIBA
 
@@ -882,6 +912,8 @@ pelota db 4 dup('$')
 
 		dec si
 		getpcolor si,di ;VERIFICAR SI HAY OBSTACULO ABAJO
+		cmp al, 0Eh
+		je COLISIONAB
 		cmp al,00h
 		jne OAB			;HAY OBSTACULO ABAJO
 
@@ -889,6 +921,8 @@ pelota db 4 dup('$')
 
 		dec di
 		getpcolor si,di;VERIFICAR SI HAY OBSTACULO IZQUIERDA
+		cmp al, 0Eh
+		je COLISIONIZ
 		cmp al,00h
 		jne OI			;HAY OBSTACULO IZQUIERDA
 
@@ -896,9 +930,45 @@ pelota db 4 dup('$')
 
 		inc di
 		getpcolor si,di;VERIFICAR SI HAY OBSTACULO DERECHA
+		cmp al, 0Eh
+		je COLISIONDER
 		cmp al,00h
 		jne OD			;HAY OBSTACULO DERECHA
 
+		jmp FIN
+
+		COLISIONAR:
+		choquebloque si,di
+		mov al,01h
+		neg al
+		irLectura
+		mov pelota[2],al
+		irVideo
+		jmp FIN	
+
+		COLISIONAB:
+		choquebloque si,di
+		mov al,01h
+		irLectura
+		mov pelota[2],al
+		irVideo
+		jmp FIN
+
+		COLISIONDER:
+		choquebloque si,di
+		mov al,01h
+		neg al
+		irLectura
+		mov pelota[3],al
+		irVideo
+		jmp FIN
+
+		COLISIONIZ:
+		choquebloque si,di
+		mov al,01h
+		irLectura
+		mov pelota[3],al
+		irVideo
 		jmp FIN
 
 		OAR:
@@ -908,7 +978,7 @@ pelota db 4 dup('$')
 		mov pelota[2],al
 		irVideo
 		jmp FIN
-		
+
 		OAB:
 		mov al,01h
 		irLectura
@@ -935,6 +1005,39 @@ pelota db 4 dup('$')
 
 		ret
 	cambiodireccion endp
+
+	crearbloques proc
+		;CREAR 8 BLOQUES CON ESPACIO DE 3 PIXELES DESDE LA POSICION 20,20 EN DECIMAL 
+		;CREAR 6 FILAS 
+		push ax
+		push si
+		push di
+		push cx
+
+		mov si,14h ; 20 en decimal (COLUMNA ACTUAL)
+		mov di,14h ; (FILA ACTUAL)
+		mov ax,14h ;FILA ACTUAL
+		mov cx,06h ;NUMERO DE FILAS
+		COLUMNA:
+			push cx
+			mov cx,08h ;NUMERO DE BLOQUES EN LA FILA
+			FILA:
+			crearbloque si,di,0Eh
+			add si,21h ; 30 (del bloque) + 3 de espacio = 33 = 21h en hexa
+			loop FILA
+			mov si,ax  ;REGRESAR A LA COLUMNA INICIAL QUE ES 20
+			add di,08h ;(INCREMENTAR A LA SIGUIENTE POSICION DE LA FILA DONDE SE PONDRA EL BLOQUE)
+			pop cx
+		loop COLUMNA
+
+		FIN:
+		pop cx
+		pop di
+		pop si
+		pop ax
+
+		ret
+	crearbloques endp
 
 
 

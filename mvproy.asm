@@ -120,14 +120,14 @@ LOCAL INICIO,PINTARPIXELB,PINTARPIXELR,PINTARPIXELV,PINTARPIXELAM,PINTARPIXELA,F
 		je FIN
 		cmp tablero[di],'1'
 		je PINTARPIXELB
-		;cmp tablero[di],'2'
-		;je PINTARPIXELV
-		;cmp tablero[di],'3'
-		;je PINTARPIXELAM
-		;cmp tablero[di],'4'
-		;je PINTARPIXELA
-		;cmp tablero[di],'5'
-		;je PINTARPIXELR
+		cmp tablero[di],'2'
+		je PINTARPIXELV
+		cmp tablero[di],'3'
+		je PINTARPIXELAM
+		cmp tablero[di],'4'
+		je PINTARPIXELA
+		cmp tablero[di],'5'
+		je PINTARPIXELR
 		inc di
 		jmp INICIO
 
@@ -450,5 +450,77 @@ getpcolor macro col,fil
 	pop dx
 	pop cx
 	pop bx
+endm
+
+crearbloque macro posxi,posyi,color
+LOCAL INICIO,FIN,ALTO,LARGO
+INICIO:
+
+push cx
+push si
+push di
+;LARGO DEL BLOQUE -> 30
+;ALTO DEL BLOQUE -> 5
+mov cx,05h ;10 de alto
+mov si,posxi
+mov dx,si
+mov di,posyi
+ALTO:
+	push cx
+	mov cx,01Eh ;->30
+	LARGO:
+		pixel si,di,color 	;PINTA PIXEL EN LA POSICION CORRESPONDIENTE
+		inc si
+		loop LARGO
+	pop cx		;RETORNA VALOR DE CX
+	mov si,dx 	;REGRESAR A LA COLUMNA INICIAL
+	inc di 		;PASA A LA SIGUIENTE FILA
+loop ALTO
+jmp FIN
+
+FIN:
+pop di 
+pop si
+pop cx
 endm 
+
+choquebloque macro xi,yi
+LOCAL INICIO,BUSCARCOLUMNAINICIO,BUSCARFILAINICIO,P,FIN,CP
+;RETROCEDER HASTA ENCONTRAR UN PIXEL NEGRO EL CUAL SIGNIFICARA QUE ES DONDE INICIA EL BLOQUE
+push si
+push di
+call poscursorpuntaje
+irLectura
+inc pelota[4]
+irVideo
+printOrdenamiento pelota[4]
+BUSCARCOLUMNAINICIO:
+getpcolor xi,yi ;DEVUELVE EL COLOR EN AL
+cmp al,00h
+je CP
+dec xi
+jmp BUSCARCOLUMNAINICIO
+
+
+CP:
+inc xi ;POSICIONAR EN PRIMER PIXEL DE COLOR
+
+;RETROCEDER HASTA ENCONTRAR PIXEL NEGRO
+BUSCARFILAINICIO:
+getpcolor xi,yi
+cmp al,00h
+je P
+dec yi
+jmp BUSCARFILAINICIO
+
+P:
+inc yi
+crearbloque xi,yi,00h
+
+
+FIN:
+pop di
+POP si
+
+endm
 
